@@ -9,11 +9,10 @@ namespace Proxy
         public Sprite highResSprite;
         public AnimationClip complexAnimation;
         //Constructor
-        public DetailedSprite(string spritePath, string animationPath)
+        public DetailedSprite(Sprite sprite, AnimationClip animation)
         {
-            //Load asynchronously
-            var spriteRequest = Resources.LoadAsync<Sprite>(spritePath);
-            var animationRequest = Resources.LoadAsync<AnimationClip>(animationPath);
+            highResSprite = sprite;
+            complexAnimation = animation;
         }
     }
 

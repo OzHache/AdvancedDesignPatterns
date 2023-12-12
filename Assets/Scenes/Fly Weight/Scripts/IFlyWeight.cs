@@ -1,13 +1,8 @@
 namespace Fly_Weight
 {
-    public interface IFlyWeight
+    public interface IFlyweight
     {
         
         
-    }
-    public enum FlyWeightType
-    {
-        CharacterSpriteFlyWeight,
-        CharacterMovementFlyWeight
     }
 }

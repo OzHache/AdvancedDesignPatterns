@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
+using SuperTiled2Unity.Editor.LibTessDotNet;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEditor;
 
 namespace Proxy
 {
@@ -8,38 +11,70 @@ namespace Proxy
     public class SpriteProxy : MonoBehaviour
     {
         private static SpriteProxy instance;
+        [SerializeField] bool setInstance = false;
         private static List<SpriteProxy> instances = new List<SpriteProxy>();
         private DetailedSprite detailedSprite;
-        private string spritePath;
-        private string animationPath;
+        private Bounds spriteBounds;
+        [SerializeField]private string spritePath;
+        [SerializeField]private string animationPath;
         public SpriteRenderer spriteRenderer; // Attach this via the Inspector
         public float renderBuffer = 0.1f; // How far before the object is in view should we load the detailed assets?
-        public SpriteProxy(string spritePath, string animationPath)
-        {
-            this.spritePath = spritePath;
-            this.animationPath = animationPath;
-        }
-        
+
+
         void Awake()
         {
-            if (instance != null)
+            SetUpDetailedSprite();
+            SetUpInstance();
+            spriteRenderer.sprite = null;
+        }
+        void Start()
+        {
+            //Check if there is no instance and assign me if so
+            if (instance == null)
             {
-                enabled = false; //Stop this script from recieving or other Unity messages
+                instance = this;
+            }
+            else if (instance != this)
+            {
+                enabled = false;
+            }
+        }
+
+        private void SetUpDetailedSprite()
+        {
+            var sprite = spriteRenderer.sprite;
+            //set up the Bounds
+            Vector2 localScale = transform.localScale;
+            spriteBounds = new Bounds(transform.position, sprite.bounds.size * localScale);
+            detailedSprite = new DetailedSprite(sprite, null);
+        }
+
+        private void SetUpInstance()
+        {
                 //register this instance with the static list
                 instances.Add(this);
-                return;
-            }
-            instance = this;
+                if (setInstance)
+                {
+                    instance = this;
+                    //disable all the other instances
+                    foreach (var spriteProxy in instances)
+                    {
+                        if (spriteProxy != instance)
+                        {
+                            spriteProxy.enabled = false;
+                        }
+                    }
+                    enabled = true;
+                }else if(instance != null)
+                {
+                    enabled = false;
+                }
+            
         }
 
         internal void LoadDetailedAssets()
         {
-            if (detailedSprite == null)
-            {
-                detailedSprite = new DetailedSprite(spritePath, animationPath);
-                spriteRenderer.sprite = detailedSprite.highResSprite;
-                // Apply animation to the Animator component
-            }
+            spriteRenderer.sprite = detailedSprite.highResSprite;
         }
 
         void Update()
@@ -61,8 +96,9 @@ namespace Proxy
                 if (spriteProxy.IsInCameraView())
                 {
                     spriteProxy.LoadDetailedAssets();
-                    //Remove this instance from the list
-                    instances.Remove(spriteProxy);
+                } else
+                {
+                    spriteProxy.spriteRenderer.sprite = null;
                 }
             }
         }
@@ -76,12 +112,12 @@ namespace Proxy
                 new Vector3(
                     camera.orthographicSize * camera.aspect * 2,
                     camera.orthographicSize * 2,
-                    0
+                    float.MaxValue
                 )
             );
             viewportBounds.Expand(renderBuffer);
-            //Check if any part of the sprite is in the viewport
-            return viewportBounds.Intersects(spriteRenderer.bounds);
+            
+            return viewportBounds.Intersects(spriteBounds);
             
         }
         void OnDestroy()

@@ -27,6 +27,27 @@ namespace Visitor
         {
             visitor = visitorDictionary[visitorType]();
         }
-        
+
+        private void OnMouseUp()
+        {
+            CheckForCollision();
+        }
+        private void CheckForCollision()
+        {
+            // Get all colliders2D that are touching this object
+            Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 0.5f);
+            foreach (Collider2D collider in colliders)
+            {
+                // Get the IGameObject component from the collider
+                IGameObject gameObject = collider.GetComponent<IGameObject>();
+                if (gameObject != null)
+                {
+                    // Accept the visitor
+                    gameObject.Accept(visitor);
+                }
+            }
+            
+            
+        }
     }
 }
